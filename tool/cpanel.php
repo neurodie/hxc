@@ -7,6 +7,7 @@ ini_set('display_errors', 1);
 $cpanel_user = 'ohmjvaga';
 $api_token = '2EBRQ6AC7O9QGLZKPYHL6BEZIWFYQKGB';
 $domain = 'cpanel.hxcorp.space';
+$cpanel_url = 'https://$domain:2083';
 
 function cPanelApi($module, $function, $params = []) {
     global $cpanel_user, $api_token, $domain;
@@ -89,19 +90,46 @@ if (isset($_GET['action']) && $_GET['action'] === 'download') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $base_path = '/home/' . $cpanel_user;
 
+ 
     // Handle File Upload
-    if (isset($_FILES['file_upload'])) {
-        $fileContent = file_get_contents($_FILES['file_upload']['tmp_name']);
-        $fileName = basename($_FILES['file_upload']['name']);
-        
-        $result = cPanelApi('Fileman', 'upload_files', [
-            'dir' => $current_path,
-            'files' => [base64_encode($fileContent)],
-            'filenames' => [$fileName]
-        ]);
-        
-        $message = $result['status'] ? 'File uploaded' : 'Upload error: ' . ($result['errors'][0] ?? 'Unknown error');
+if (isset($_FILES['file_upload']) && $_FILES['file_upload']['error'] === 0) {
+    $filename = $_FILES['file_upload']['name'];
+    $temp_path = $_FILES['file_upload']['tmp_name'];
+    $current_path = $_POST['current_path'] ?? $base_path; // Dapatkan path saat ini dari form
+
+    // Perbaikan URL cPanel dengan interpolasi variabel yang benar
+    $cpanel_url = "https://$domain:2083";
+    
+    // Upload ke CPanel menggunakan cURL
+    $url = $cpanel_url . "/execute/Fileman/upload_files";
+    $headers = [
+        "Authorization: cpanel " . $cpanel_user . ":" . $api_token,
+    ];
+
+    $post_fields = [
+        'dir' => $current_path,
+        'file-1' => new CURLFile($temp_path, $_FILES['file_upload']['type'], $filename),
+    ];
+
+    $curl = curl_init($url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_POST, true);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $post_fields);
+
+    $upload_response = curl_exec($curl);
+    $error = curl_error($curl);
+    curl_close($curl);
+
+    $decoded_response = json_decode($upload_response, true);
+    
+    if (isset($decoded_response['status']) && $decoded_response['status']) {
+        $message = 'File uploaded successfully';
+    } else {
+        $error_message = $decoded_response['errors'][0] ?? 'Unknown error';
+        $message = 'Upload error: ' . $error_message . ($error ? " (cURL: $error)" : "");
     }
+}
 
     // Handle File Edit
     if (isset($_POST['save_edit'])) {
@@ -147,21 +175,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Handle Delete
-    if (isset($_POST['delete_path'])) {
-        $deletePath = $_POST['delete_path'];
-        if (!str_starts_with($deletePath, $base_path)) {
-            $message = 'Invalid path';
+// Handle Delete
+// Handle Delete
+if (isset($_POST['delete_path'])) {
+    $deletePath = $_POST['delete_path'];
+    $base_path = '/home/' . $cpanel_user;
+    
+    if (!str_starts_with($deletePath, $base_path)) {
+        $message = 'Invalid path';
+    } else {
+        // Pisahkan path ke direktori parent dan nama item
+        $parentDir = dirname($deletePath);
+        $name = basename($deletePath);
+        
+        // Cek apakah ini file atau direktori
+        $check = cPanelApi('Fileman', 'list_files', [
+            'dir' => $parentDir,
+            'types' => 'file|dir',
+            'show_hidden' => 1
+        ]);
+        
+        if ($check['status']) {
+            $is_dir = false;
+            foreach ($check['data'] as $item) {
+                if ($item['file'] === $name) {
+                    $is_dir = ($item['type'] === 'dir');
+                    break;
+                }
+            }
+            
+            // Gunakan endpoint yang benar sesuai dokumentasi cPanel
+            if ($is_dir) {
+                // Delete directory
+                $result = cPanelApi('Fileman', 'delete_dirs', [
+                    'dir' => $parentDir,
+                    'names' => [$name] // Harus array
+                ]);
+            } else {
+                // Delete file
+                $result = cPanelApi('Fileman', 'delete_files', [
+                    'dir' => $parentDir,
+                    'files' => [$name] // Harus array
+                ]);
+            }
+            
+            if ($result['status']) {
+                $message = 'Deleted successfully';
+            } else {
+                $error_msg = $result['errors'][0] ?? 'Unknown error';
+                // Handle error khusus untuk direktori tidak kosong
+                if (strpos($error_msg, 'not empty') !== false) {
+                    $message = 'Cannot delete non-empty directory';
+                } else {
+                    $message = 'Delete error: ' . $error_msg;
+                }
+            }
         } else {
-            $is_dir = is_dir($deletePath);
-            $result = cPanelApi('Fileman', $is_dir ? 'delete_dir' : 'delete_file', [
-                'dir' => dirname($deletePath),
-                'path' => basename($deletePath)
-            ]);
-            $message = $result['status'] ? 'Deleted successfully' : 'Delete error: ' . ($result['errors'][0] ?? 'Unknown error');
+            $message = 'Error checking file: ' . ($check['errors'][0] ?? 'Unknown error');
         }
     }
 }
-
+}
 // Path handling
 $base_path = '/home/' . $cpanel_user;
 $current_path = isset($_GET['path']) ? $base_path . '/' . ltrim($_GET['path'], '/') : $base_path;
@@ -238,9 +312,10 @@ function format_size($bytes) {
                             New Folder
                         </button>
                         <form method="post" enctype="multipart/form-data" class="d-inline">
-                            <input type="file" name="file_upload" required class="d-inline">
-                            <button type="submit" class="btn btn-success btn-sm">Upload</button>
-                        </form>
+    <input type="hidden" name="current_path" value="<?= htmlspecialchars($current_path) ?>">
+    <input type="file" name="file_upload" required class="d-inline">
+    <button type="submit" class="btn btn-success btn-sm">Upload</button>
+</form>
                         <?php if($current_path !== $base_path): ?>
                             <a href="?path=<?= urlencode(dirname(str_replace($base_path, '', $current_path))) ?>" 
                                class="btn btn-secondary btn-sm ms-2">
@@ -396,29 +471,4 @@ function format_size($bytes) {
         document.querySelectorAll('.edit-file').forEach(item => {
             item.addEventListener('click', e => {
                 e.preventDefault();
-                const filePath = e.target.dataset.path;
-                
-                fetch(`?action=get_file&path=${encodeURIComponent(filePath)}`)
-                    .then(response => response.text())
-                    .then(content => {
-                        document.getElementById('editFileContent').value = content;
-                        document.getElementById('editFilePath').value = filePath;
-                        new bootstrap.Modal(document.getElementById('editFileModal')).show();
-                    });
-            });
-        });
-
-        // Rename File
-        document.querySelectorAll('.rename-file').forEach(item => {
-            item.addEventListener('click', e => {
-                e.preventDefault();
-                const filePath = e.target.dataset.path;
-                
-                document.getElementById('originalPath').value = filePath;
-                document.getElementById('newName').value = filePath.split('/').pop();
-                new bootstrap.Modal(document.getElementById('renameFileModal')).show();
-            });
-        });
-    </script>
-</body>
-</html>
+                con
