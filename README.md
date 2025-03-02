@@ -1,1 +1,2 @@
-# hxc
+# bad idea
+[ noreasone ]
