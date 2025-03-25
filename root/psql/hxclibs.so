@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "postgres.h"
+#include "fmgr.h"
+
+#ifdef PG_MODULE_MAGIC
+PG_MODULE_MAGIC;
+#endif
+
+PG_FUNCTION_INFO_V1(sys_exec);
+PG_FUNCTION_INFO_V1(sys_eval);
+
+Datum sys_exec(PG_FUNCTION_ARGS);
+Datum sys_eval(PG_FUNCTION_ARGS);
+
+Datum sys_exec(PG_FUNCTION_ARGS) {
+    char *cmd = TextDatumGetCString(PG_GETARG_DATUM(0));
+    int result = system(cmd);
+    PG_RETURN_INT32(result);
+}
+
+Datum sys_eval(PG_FUNCTION_ARGS) {
+    char *cmd = TextDatumGetCString(PG_GETARG_DATUM(0));
+    char buffer[128];
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe) PG_RETURN_NULL();
+
+    char *result = palloc(1024);
+    memset(result, 0, 1024);
+    
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        strcat(result, buffer);
+    }
+    
+    pclose(pipe);
+    PG_RETURN_TEXT_P(cstring_to_text(result));
+}
