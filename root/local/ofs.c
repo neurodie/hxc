@@ -1,4 +1,3 @@
-// ofs.c - CVE-2015-1328 OverlayFS LPE exploit (fixed printf version)
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
