@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#define PORT 999
+#define PORT 9999
 #define SECRET "hxc"
 
 void handle_client(int client_sock) {
