@@ -1,3 +1,5 @@
+https://github.com/m0nad/Diamorphine
+https://chatgpt.com/c/6879d406-c3e0-8003-a147-342aed58c261
 [ u can use this ext for camouflage ]
 .rsyslogd
 .svcctl
