@@ -1,1 +1,3 @@
 cat live.txt | httpx -ports 80,443 -td -sc -silent -status-code 200 | grep -Ei 'asp|php|jsp|jspx|aspx' | awk '{print $1}' | tee  tesaja.txt
+
+echo www.saguku.ptun-jayapura.go.id | gau | uro |  grep -E '.php|.asp|.aspx|.jspx|.jsp'
