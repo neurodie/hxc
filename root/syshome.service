@@ -1,14 +1,12 @@
 [Unit]
-Description=home service
+Description=My Background Service
 After=network.target
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/opt/syshome
-ExecStart=/usr/bin/python3 /opt/syshome/sys.py
+ExecStart=/usr/bin/python3 /home/ubuntu/.ass/sys.py
 Restart=always
 RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
