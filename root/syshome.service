@@ -1,0 +1,14 @@
+[Unit]
+Description=home service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/syshome
+ExecStart=/usr/bin/python3 /opt/syshome/sys.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
