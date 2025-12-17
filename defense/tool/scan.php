@@ -344,4 +344,5 @@ if (isset($_GET['hapus'])) {
 $scanner = new PemindaiMalware();
 $scanner->mulaiScan('.');
 echo "</body></html>";
+
 ?>
